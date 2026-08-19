@@ -1,0 +1,81 @@
+import { Component, OnInit } from '@angular/core';
+import { PollService } from '../../services/poll.service';
+import { Poll } from '../../models/poll';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-poll',
+  imports: [CommonModule, FormsModule],
+  templateUrl: './poll.component.html',
+  styleUrl: './poll.component.css',
+})
+export class PollComponent implements OnInit{
+
+  newPoll: Poll = {
+    question: '',
+    options: [
+      {optionText: '', votes: 0},
+      {optionText: '', votes: 0}
+    ]
+  }
+
+  polls: Poll[] = [];
+
+  constructor(private pollService : PollService){
+  }
+
+  ngOnInit(): void {
+
+    this.loadPolls();
+  }
+
+  loadPolls() {
+    
+    this.pollService.getAllPolls().subscribe({
+      next: (data) => {
+        this.polls = data;
+      },
+      error: (error) => {
+        console.error("Error fetching polls", error);
+      }
+    });
+  }
+
+  addOption(){
+
+    this.newPoll.options.push({optionText: '', votes: 0})
+  }
+
+  createPoll() {
+
+    this.pollService.createPoll(this.newPoll).subscribe({
+      next: (createdPoll) => {
+        this.polls.push(createdPoll);
+      },
+      error: (error) => {
+        console.error("Poll Creation failed", error)
+      }
+    });
+  }
+
+  vote(pollId: number, optionIndex: number){
+    
+    this.pollService.vote(pollId, optionIndex).subscribe({
+      next: () => {
+        const poll = this.polls.find( p => p.id === pollId);
+        if(poll){
+          poll.options[optionIndex].votes++;
+        }
+      },
+      error: (error) => {
+        console.error("Error: Vote did not pass", error)
+      }
+    })
+  }
+
+  trackByIndex(index: number): number {
+    
+    return index;
+  }
+}
